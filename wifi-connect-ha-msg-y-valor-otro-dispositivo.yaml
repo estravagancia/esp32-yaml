@@ -1,0 +1,119 @@
+esphome:
+  name: esp-one
+  friendly_name: esp-one
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+  level: VERBOSE
+  baud_rate: 115200
+  deassert_rts_dtr: true
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "s6dwdqx6fpiGNJa/IFBUYepPJ7K/YHhmUX/SixPtTPI="
+
+ota:
+  - platform: esphome
+    password: "ed8591bc22bb5ee5a519da8e38e1dfbf"
+
+switch:
+  - platform: gpio
+    pin:
+      number: 2
+      mode: output
+    id: internalLED
+
+wifi:
+  networks:
+    - ssid: !secret wifi_ssid
+      password: !secret wifi_password
+    - ssid: !secret wifi_ssid_EXT
+      password: !secret wifi_password_EXT
+
+# Optional manual IP
+  manual_ip:
+    static_ip: 192.168.0.28
+    gateway: 192.168.0.1
+    subnet: 255.255.254.0
+
+  on_connect:
+    - switch.toggle: internalLED
+    - delay: 5s  # Gives time for improv results to be transmitted
+    - logger.log: "Connected!"
+    - homeassistant.action:
+        action: notify.persistent_notification
+        data:
+          message: Connected to Wifi 😊
+
+  on_disconnect:
+    - switch.turn_off: internalLED
+    - logger.log: "Not connected"
+    - homeassistant.action:
+        action: notify.persistent_notification
+        data:
+          message: Not connected to Wifi 😣
+  
+
+  # # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esp-One Fallback Hotspot"
+    password: !secret wifi_password
+
+captive_portal:
+
+# notify:
+  # - platform: homeassistant
+#   name: "mi_notificacion"
+#   service: notify.esp_service_dev
+
+sensor:
+  - platform: homeassistant
+    id: bfc41a8d526ae98abauokq
+    entity_id: sensor.sensor_humedad
+    unit_of_measurement: "%"
+    device_class: "humidity"
+    state_class: "measurement"
+    on_value:
+      then:
+        - homeassistant.action: 
+            action: notify.persistent_notification
+            data_template:
+              message: >
+                {{ states('sensor.sensor_humedad', with_unit=True) }}
+  - platform: homeassistant
+    name: temperatura
+    entity_id: sensor.sensor_temperatura
+    unit_of_measurement: "ºC"
+    device_class: "temperature"
+    state_class: "measurement"
+    on_value:
+      then:
+        - homeassistant.action: 
+            action: notify.persistent_notification
+            data_template:
+              message: >
+                {{ states('sensor.sensor_temperatura', with_unit=True) }}
+      # - below: 50.0
+      #   then: 
+      #     - homeassistant.action: 
+      #         action: notify.persistent_notification
+      #         data:
+      #           message: Humedad por debajo del 50%
+# interval:
+#   - interval: 60s
+#     then:
+#       if:
+#         condition:
+#           homeassistant.entity_is_on:
+#             entity_id: sensor.sensor_humedad
+#         then:
+#         - homeassistant.action: 
+#             action: notify.persistent_notification
+#             data:
+#               message: Humedad ON
