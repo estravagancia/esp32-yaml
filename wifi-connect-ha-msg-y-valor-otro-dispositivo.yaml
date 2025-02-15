@@ -74,7 +74,7 @@ captive_portal:
 
 sensor:
   - platform: homeassistant
-    id: bfc41a8d526ae98abauokq
+    id: humedad
     entity_id: sensor.sensor_humedad
     unit_of_measurement: "%"
     device_class: "humidity"
